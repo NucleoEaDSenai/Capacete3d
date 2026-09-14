@@ -1,552 +1,574 @@
-/* =========================================================
+/* =============================================================
    CONFIGURAÇÃO
-   ========================================================= */
+   -------------------------------------------------------------
+   CALIBRATION_ENABLED:
+     - true  -> mostra o botão "Calibração" e permite ajustar os
+                pontos e as posições de câmera (use isso enquanto
+                estiver preparando o material).
+     - false -> esconde totalmente o modo calibração. Use este
+                valor antes de publicar/incorporar no Storyline
+                (modo aluno "limpo").
 
-// Ative para liberar o botão "Calibração" e reposicionar hotspots / câmera.
-// Deixe em false para o modo aluno (produção / Storyline).
+   HOTSPOTS:
+     - Lista das peças a identificar, na ordem em que aparecem no
+       menu lateral. "position" e "normal" são as coordenadas 3D
+       ancoradas no modelo (não foram alteradas). "desc" é o texto
+       exibido no card do modo aluno.
+     - Para reposicionar um hotspot: abra o Modo Calibração,
+       selecione a peça, clique sobre o ponto correspondente no
+       modelo e exporte o array atualizado.
+
+   CAMERA_PRESETS:
+     - Posição de câmera "ideal" para cada peça (para onde o
+       capacete gira automaticamente ao selecionar o item no menu
+       ou clicar no hotspot).
+     - theta/phi em graus, radius em metros (ou null para usar o
+       raio da posição inicial) e fov em graus (ou null para usar
+       o campo de visão inicial).
+     - Para recalibrar: no Modo Calibração, posicione o modelo e o
+       zoom manualmente, selecione a peça e clique em
+       "Capturar posição da câmera". Depois exporte os valores.
+   ============================================================= */
+
 const CALIBRATION_ENABLED = true;
 
-// ---- Posições dos hotspots no modelo (calibradas) ----
-// position / normal = ponto 3D exato sobre a peça no modelo.
 const HOTSPOTS = [
-  { id: "cinta-jugular",  label: "Cinta Jugular",         position: "-0.3045 0.3803 0.1613", normal: "-0.1390 0.1790 0.9740" },
-  { id: "ajuste-traseiro",label: "Ajuste Traseiro",       position: "0.0114 0.3993 -0.3336", normal: "0.1818 -0.7712 -0.6101" },
-  { id: "carneira",       label: "Carneira (Suspensão)",  position: "0.0000 0.7039 0.0819", normal: "-0.1000 -0.8110 -0.5760" },
-  { id: "encaixe",        label: "Encaixe de Acessórios", position: "0.3703 0.8101 0.0205", normal: "0.6670 0.7450 -0.0180" },
-  { id: "aba",            label: "Aba",                   position: "0.0927 0.6744 0.4875", normal: "0.1933 0.8153 0.5459" },
-  { id: "fivela",         label: "Fivela da Jugular",     position: "0.2285 0.0990 0.1580", normal: "0.6876 -0.6159 0.3847" },
-  { id: "queixeira",      label: "Queixeira",             position: "0.0043 0.0263 0.2468", normal: "0.0040 -0.6540 0.7560" },
-];
-
-// ---- Ordem, título e texto de cada peça no menu / card ----
-const PARTS = [
-  { id: "aba",             label: "Aba",
+  { id: "aba",             label: "Aba",                    position: "0.0927 0.6744 0.4875",  normal: "0.1933 0.8153 0.5459",
     desc: "Ajuda a proteger a região dos olhos e do rosto contra luz, respingos e pequenas partículas, proporcionando maior conforto durante o uso." },
-  { id: "cinta-jugular",   label: "Cinta Jugular",
+  { id: "cinta-jugular",   label: "Cinta Jugular",          position: "-0.3045 0.3803 0.1613",  normal: "-0.1390 0.1790 0.9740",
     desc: "Auxilia na fixação do capacete à cabeça, reduzindo o risco de deslocamento ou queda durante as atividades." },
-  { id: "queixeira",       label: "Queixeira",
+  { id: "queixeira",       label: "Queixeira",              position: "0.0043 0.0263 0.2468",   normal: "0.0040 -0.6540 0.7560",
     desc: "Apoia a cinta sob o queixo, proporcionando maior estabilidade, conforto e posicionamento adequado do capacete." },
-  { id: "fivela",          label: "Fivela da Jugular",
+  { id: "fivela",          label: "Fivela da Jugular",      position: "0.2285 0.0990 0.1580",   normal: "0.6876 -0.6159 0.3847",
     desc: "Permite prender e soltar a cinta com praticidade, mantendo o sistema de fixação fechado e ajustado." },
-  { id: "encaixe",         label: "Encaixe de Acessórios",
+  { id: "encaixe",         label: "Encaixe de Acessórios",  position: "0.3703 0.8101 0.0205",   normal: "0.6670 0.7450 -0.0180",
     desc: "Permite acoplar acessórios compatíveis ao capacete de acordo com as necessidades de cada atividade." },
-  { id: "ajuste-traseiro", label: "Ajuste Traseiro",
+  { id: "ajuste-traseiro", label: "Ajuste Traseiro",        position: "0.0114 0.3993 -0.3336",  normal: "0.1818 -0.7712 -0.6101",
     desc: "Permite adaptar a suspensão ao tamanho da cabeça, proporcionando melhor encaixe, estabilidade e conforto." },
-  { id: "carneira",        label: "Carneira (Suspensão)",
+  { id: "carneira",        label: "Carneira (Suspensão)",   position: "0.0000 0.7039 0.0819",   normal: "-0.1000 -0.8110 -0.5760",
     desc: "Sistema interno que sustenta o capacete, distribui o peso e mantém o casco afastado da cabeça, proporcionando conforto e segurança." },
 ];
 
-// ---- Posições de câmera (rotação automática) por peça ----
-// Formato igual ao atributo camera-orbit: "θdeg φdeg raio"
-// raio pode ser "%" (relativo ao enquadramento) ou "m" (metros absolutos,
-// como fica ao usar "Capturar posição da câmera" no modo calibração).
-// Estes são valores iniciais — recalibre e exporte para refiná-los.
-const CAMERA_VIEWS = {
-  "aba":             "0deg 78deg 100%",
-  "cinta-jugular":   "-35deg 82deg 95%",
-  "queixeira":       "5deg 96deg 90%",
-  "fivela":          "-90deg 85deg 92%",
-  "encaixe":         "60deg 55deg 100%",
-  "ajuste-traseiro": "180deg 80deg 95%",
-  "carneira":        "10deg 115deg 85%",
+const CAMERA_PRESETS = {
+  "aba":             { theta: 0,   phi: 78, radius: null, fov: null },
+  "cinta-jugular":   { theta: -35, phi: 88, radius: null, fov: null },
+  "queixeira":       { theta: 0,   phi: 96, radius: null, fov: null },
+  "fivela":          { theta: 55,  phi: 96, radius: null, fov: null },
+  "encaixe":         { theta: 35,  phi: 55, radius: null, fov: null },
+  "ajuste-traseiro": { theta: 180, phi: 80, radius: null, fov: null },
+  "carneira":        { theta: 0,   phi: 35, radius: null, fov: null },
 };
 
-const CAMERA_TRANSITION_MS = 1000;
+/* ============================================================= */
 
-/* =========================================================
-   ESTADO
-   ========================================================= */
-const state = {
-  mode: "aluno",              // "aluno" | "calibracao"
-  selectedId: null,           // peça selecionada (hotspot + menu + card)
-  calibSelectedId: PARTS[0].id,
-  hotspots: {},               // id -> { position, normal } (mutável em calibração)
-  cameraViews: { ...CAMERA_VIEWS }, // id -> string (mutável em calibração)
-  resolvedViews: {},          // id -> { theta, phi, radius } em rad/rad/m (cache resolvido)
-  cameraCalibrated: {},       // id -> true se já foi capturado manualmente
-  hotspotCalibrated: {},      // id -> true se a posição já existe
-  animating: false,
-  initialOrbitString: null,
-  initialFovString: null,
-};
+(function () {
+  "use strict";
 
-HOTSPOTS.forEach(h => {
-  state.hotspots[h.id] = { position: h.position, normal: h.normal };
-  state.hotspotCalibrated[h.id] = !!(h.position && h.normal);
-});
+  const viewer = document.getElementById("viewer");
+  const stage = document.getElementById("stage");
+  const emptyState = document.getElementById("empty-state");
+  const btnOpenCalibFromEmpty = document.getElementById("btn-open-calib-from-empty");
 
-/* =========================================================
-   ELEMENTOS
-   ========================================================= */
-const viewer = document.getElementById("viewer");
-const stage = document.getElementById("stage");
-const viewerFrame = document.getElementById("viewer-frame");
+  const infoPanel = document.getElementById("info-panel");
+  const infoNumber = document.getElementById("info-number");
+  const infoTitle = document.getElementById("info-title");
+  const infoDesc = document.getElementById("info-desc");
+  const infoClose = document.getElementById("info-close");
 
-const btnReset = document.getElementById("btn-reset");
-const btnZoomIn = document.getElementById("btn-zoom-in");
-const btnZoomOut = document.getElementById("btn-zoom-out");
-const btnToggleCalib = document.getElementById("btn-toggle-calib");
+  const navList = document.getElementById("nav-list");
 
-const infoCard = document.getElementById("info-card");
-const infoNumber = document.getElementById("info-number");
-const infoTitle = document.getElementById("info-title");
-const infoDesc = document.getElementById("info-desc");
-const infoClose = document.getElementById("info-close");
+  const btnReset = document.getElementById("btn-reset");
+  const btnZoomIn = document.getElementById("btn-zoom-in");
+  const btnZoomOut = document.getElementById("btn-zoom-out");
+  const btnToggleCalib = document.getElementById("btn-toggle-calib");
 
-const partMenu = document.getElementById("part-menu");
-const hint = document.getElementById("hint");
-const emptyState = document.getElementById("empty-state");
+  const calibPanel = document.getElementById("calib-panel");
+  const selectPart = document.getElementById("select-part");
+  const calibStatus = document.getElementById("calib-status");
+  const calibList = document.getElementById("calib-list");
+  const btnCaptureCamera = document.getElementById("btn-capture-camera");
+  const btnExport = document.getElementById("btn-export");
+  const btnCloseCalib = document.getElementById("btn-close-calib");
+  const exportBox = document.getElementById("export-box");
+  const exportText = document.getElementById("export-text");
+  const btnCopy = document.getElementById("btn-copy");
+  const btnExportCamera = document.getElementById("btn-export-camera");
+  const exportCameraBox = document.getElementById("export-camera-box");
+  const exportCameraText = document.getElementById("export-camera-text");
+  const btnCopyCamera = document.getElementById("btn-copy-camera");
 
-const calibPanel = document.getElementById("calib-panel");
-const calibClose = document.getElementById("calib-close");
-const selectPart = document.getElementById("select-part");
-const calibStatus = document.getElementById("calib-status");
-const btnCaptureCamera = document.getElementById("btn-capture-camera");
-const btnTestView = document.getElementById("btn-test-view");
-const calibList = document.getElementById("calib-list");
-const btnExport = document.getElementById("btn-export");
-const btnClearCalib = document.getElementById("btn-clear-calib");
-const exportBox = document.getElementById("export-box");
-const exportText = document.getElementById("export-text");
-const btnCopyExport = document.getElementById("btn-copy-export");
+  const DEG = Math.PI / 180;
+  const RAD = 180 / Math.PI;
 
-/* =========================================================
-   UTILITÁRIOS DE CÂMERA
-   ========================================================= */
-function easeInOutCubic(t) {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
+  let mode = "aluno"; // "aluno" | "calibracao"
+  let selectedPartId = HOTSPOTS[0].id;
 
-// Normaliza uma diferença angular para o caminho mais curto (-π, π]
-function shortestDelta(from, to) {
-  const twoPi = Math.PI * 2;
-  let delta = (to - from) % twoPi;
-  if (delta > Math.PI) delta -= twoPi;
-  if (delta < -Math.PI) delta += twoPi;
-  return delta;
-}
+  // Resolvidos após o modelo carregar (radianos / metros / graus)
+  let INITIAL_THETA = 0, INITIAL_PHI = 0, INITIAL_RADIUS = 0, INITIAL_FOV = 0;
 
-// Resolve uma string de camera-orbit (aceita % ou m) para valores absolutos
-// em radianos/radianos/metros, aplicando-a momentaneamente ao viewer.
-function resolveOrbitString(orbitString) {
-  const prevOrbit = viewer.getAttribute("camera-orbit");
-  viewer.cameraOrbit = orbitString;
-  viewer.jumpCameraToGoal();
-  const resolved = viewer.getCameraOrbit();
-  // restaura imediatamente (mesmo tick, sem repaint intermediário)
-  viewer.cameraOrbit = prevOrbit;
-  viewer.jumpCameraToGoal();
-  return { theta: resolved.theta, phi: resolved.phi, radius: resolved.radius };
-}
+  let animToken = 0; // invalida animações anteriores em andamento
 
-// Resolve todas as visões de câmera configuradas, sem "flash" visível
-// (tudo acontece de forma síncrona antes do próximo repaint).
-function resolveAllCameraViews() {
-  state.initialOrbitString = viewer.getAttribute("camera-orbit");
-  state.initialFovString = viewer.getAttribute("field-of-view");
-
-  state.resolvedViews["__initial__"] = viewer.getCameraOrbit();
-
-  Object.keys(state.cameraViews).forEach(id => {
-    state.resolvedViews[id] = resolveOrbitString(state.cameraViews[id]);
-  });
-
-  // garante que o viewer volta exatamente ao estado inicial
-  viewer.cameraOrbit = state.initialOrbitString;
-  viewer.jumpCameraToGoal();
-}
-
-// Anima suavemente a câmera até a visão resolvida de `id` (ou "__initial__").
-function animateCameraTo(id, duration = CAMERA_TRANSITION_MS) {
-  const target = state.resolvedViews[id];
-  if (!target) return;
-
-  const start = viewer.getCameraOrbit();
-  const dTheta = shortestDelta(start.theta, target.theta);
-  const dPhi = target.phi - start.phi;
-  const dRadius = target.radius - start.radius;
-
-  state.animating = true;
-  viewer.classList.add("no-interaction");
-
-  const t0 = performance.now();
-
-  function frame(now) {
-    const raw = Math.min(1, (now - t0) / duration);
-    const eased = easeInOutCubic(raw);
-
-    const theta = start.theta + dTheta * eased;
-    const phi = start.phi + dPhi * eased;
-    const radius = start.radius + dRadius * eased;
-
-    viewer.cameraOrbit = `${theta}rad ${phi}rad ${radius}m`;
-    viewer.jumpCameraToGoal();
-
-    if (raw < 1) {
-      requestAnimationFrame(frame);
-    } else {
-      state.animating = false;
-      viewer.classList.remove("no-interaction");
-    }
+  /* -----------------------------------------------------------
+     Utilidades
+     ----------------------------------------------------------- */
+  function findHotspot(id) {
+    return HOTSPOTS.find((h) => h.id === id);
   }
-  requestAnimationFrame(frame);
-}
 
-/* =========================================================
-   HOTSPOTS (DOM dentro do model-viewer)
-   ========================================================= */
-function buildHotspotElements() {
-  // remove hotspots antigos, se houver
-  viewer.querySelectorAll(".hotspot").forEach(el => el.remove());
+  function vecToString(v) {
+    return [v.x, v.y, v.z].map((n) => n.toFixed(4)).join(" ");
+  }
 
-  PARTS.forEach(part => {
-    const data = state.hotspots[part.id];
-    const btn = document.createElement("button");
-    btn.className = "hotspot";
-    btn.dataset.id = part.id;
-    btn.slot = `hotspot-${part.id}`;
-    btn.setAttribute("aria-label", part.label);
+  function hasAnyCalibrated() {
+    return HOTSPOTS.some((h) => h.position);
+  }
 
-    if (data && data.position) {
-      btn.setAttribute("data-position", data.position);
-      btn.setAttribute("data-normal", data.normal || "0 1 0");
-    } else {
-      // posição provisória no centro, até ser calibrado
-      btn.setAttribute("data-position", "0 0.5 0");
-      btn.setAttribute("data-normal", "0 1 0");
-      btn.hidden = !CALIBRATION_ENABLED;
-    }
+  function normalizeAngle(rad) {
+    // devolve o ângulo equivalente no intervalo (-PI, PI]
+    let a = rad % (2 * Math.PI);
+    if (a > Math.PI) a -= 2 * Math.PI;
+    if (a < -Math.PI) a += 2 * Math.PI;
+    return a;
+  }
 
-    btn.addEventListener("click", (ev) => {
-      ev.stopPropagation();
-      if (state.mode === "calibracao") {
-        // no modo calibração, clicar num hotspot já existente apenas o seleciona
-        state.calibSelectedId = part.id;
-        selectPart.value = part.id;
-        refreshHotspotVisualState();
-        refreshCalibList();
-        setCalibStatus(`Peça selecionada: ${labelOf(part.id)}.`);
-        return;
+  function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+
+  /* -----------------------------------------------------------
+     Câmera: animação suave até uma posição-alvo (~1s)
+     ----------------------------------------------------------- */
+  function resolveTarget(partId) {
+    const preset = CAMERA_PRESETS[partId] || {};
+    return {
+      theta: (preset.theta != null ? preset.theta : 0) * DEG,
+      phi: (preset.phi != null ? preset.phi : INITIAL_PHI * RAD) * DEG,
+      radius: preset.radius != null ? preset.radius : INITIAL_RADIUS,
+      fov: preset.fov != null ? preset.fov : INITIAL_FOV,
+    };
+  }
+
+  function animateCameraTo(target, duration) {
+    duration = duration || 1000;
+    const myToken = ++animToken;
+
+    const start = viewer.getCameraOrbit();
+    const startFov = viewer.getFieldOfView();
+    const startTheta = start.theta;
+    const startPhi = start.phi;
+    const startRadius = start.radius;
+
+    let dTheta = normalizeAngle(target.theta - startTheta);
+    const dPhi = target.phi - startPhi;
+    const dRadius = target.radius - startRadius;
+    const dFov = target.fov - startFov;
+
+    const hadControls = viewer.hasAttribute("camera-controls");
+    viewer.removeAttribute("camera-controls");
+
+    const t0 = performance.now();
+
+    function frame(now) {
+      if (myToken !== animToken) return; // outra animação assumiu o controle
+
+      const t = Math.min(1, (now - t0) / duration);
+      const e = easeInOutCubic(t);
+
+      const theta = startTheta + dTheta * e;
+      const phi = startPhi + dPhi * e;
+      const radius = startRadius + dRadius * e;
+      const fov = startFov + dFov * e;
+
+      viewer.cameraOrbit = theta + "rad " + phi + "rad " + radius + "m";
+      viewer.fieldOfView = fov + "deg";
+      viewer.jumpCameraToGoal();
+
+      if (t < 1) {
+        requestAnimationFrame(frame);
+      } else if (hadControls) {
+        viewer.setAttribute("camera-controls", "");
       }
-      onHotspotClick(part.id);
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  function animateToPart(partId) {
+    animateCameraTo(resolveTarget(partId), 1000);
+  }
+
+  /* -----------------------------------------------------------
+     Renderização dos hotspots dentro do <model-viewer>
+     (slots "hotspot-<id>", atributos data-position / data-normal)
+     ----------------------------------------------------------- */
+  function renderHotspots() {
+    viewer.querySelectorAll(".hotspot").forEach((el) => el.remove());
+
+    HOTSPOTS.forEach((h) => {
+      if (!h.position) return;
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "hotspot";
+      btn.slot = "hotspot-" + h.id;
+      btn.dataset.partId = h.id;
+      btn.setAttribute("data-position", h.position);
+      btn.setAttribute("data-normal", h.normal || "0 1 0");
+      btn.setAttribute("aria-label", h.label);
+      btn.title = mode === "calibracao" ? h.label : "";
+
+      btn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        onHotspotClick(h.id);
+      });
+
+      viewer.appendChild(btn);
     });
 
-    viewer.appendChild(btn);
-  });
-  refreshHotspotVisualState();
-}
-
-function refreshHotspotVisualState() {
-  viewer.querySelectorAll(".hotspot").forEach(el => {
-    const id = el.dataset.id;
-    el.classList.toggle("selected", state.mode === "aluno" && state.selectedId === id);
-    el.classList.toggle("calib-target", state.mode === "calibracao" && state.calibSelectedId === id);
-  });
-}
-
-/* =========================================================
-   MENU LATERAL (modo aluno)
-   ========================================================= */
-function buildPartMenu() {
-  partMenu.innerHTML = "";
-  PARTS.forEach((part, idx) => {
-    const item = document.createElement("button");
-    item.type = "button";
-    item.className = "part-menu-item";
-    item.dataset.id = part.id;
-
-    const dot = document.createElement("span");
-    dot.className = "part-menu-dot";
-    dot.textContent = String(idx + 1).padStart(2, "0");
-
-    const label = document.createElement("span");
-    label.className = "part-menu-label";
-    label.textContent = part.label;
-
-    item.appendChild(dot);
-    item.appendChild(label);
-    item.addEventListener("click", () => onMenuClick(part.id));
-    partMenu.appendChild(item);
-  });
-  refreshMenuVisualState();
-}
-
-function refreshMenuVisualState() {
-  partMenu.querySelectorAll(".part-menu-item").forEach(el => {
-    el.classList.toggle("active", state.selectedId === el.dataset.id);
-  });
-}
-
-/* =========================================================
-   CARD DE INFORMAÇÃO (modo aluno)
-   ========================================================= */
-function showInfoCard(id) {
-  const idx = PARTS.findIndex(p => p.id === id);
-  const part = PARTS[idx];
-  if (!part) return;
-  infoNumber.textContent = String(idx + 1).padStart(2, "0");
-  infoTitle.textContent = part.label;
-  infoDesc.textContent = part.desc;
-  infoCard.hidden = false;
-}
-function hideInfoCard() {
-  infoCard.hidden = true;
-}
-
-/* =========================================================
-   SELEÇÃO / SINCRONIZAÇÃO
-   ========================================================= */
-function onMenuClick(id) {
-  if (state.animating) return;
-  state.selectedId = id;
-  refreshMenuVisualState();
-  refreshHotspotVisualState();
-  showInfoCard(id);
-  animateCameraTo(id);
-}
-
-function onHotspotClick(id) {
-  if (state.animating) return;
-  state.selectedId = id;
-  refreshMenuVisualState();
-  refreshHotspotVisualState();
-  showInfoCard(id);
-  // Já está visível (o usuário clicou nele) — não força rotação.
-}
-
-infoClose.addEventListener("click", () => {
-  state.selectedId = null;
-  refreshMenuVisualState();
-  refreshHotspotVisualState();
-  hideInfoCard();
-});
-
-/* =========================================================
-   CONTROLES SUPERIORES
-   ========================================================= */
-btnReset.addEventListener("click", () => {
-  if (state.animating) return;
-  state.selectedId = null;
-  refreshMenuVisualState();
-  refreshHotspotVisualState();
-  hideInfoCard();
-  animateCameraTo("__initial__", 900);
-});
-
-function stepZoom(factor) {
-  if (state.animating) return;
-  const orbit = viewer.getCameraOrbit();
-  const target = { theta: orbit.theta, phi: orbit.phi, radius: orbit.radius * factor };
-  state.resolvedViews["__zoom_tmp__"] = target;
-  animateCameraTo("__zoom_tmp__", 220);
-}
-btnZoomIn.addEventListener("click", () => stepZoom(0.85));
-btnZoomOut.addEventListener("click", () => stepZoom(1.18));
-
-/* =========================================================
-   MODO CALIBRAÇÃO
-   ========================================================= */
-function setMode(mode) {
-  state.mode = mode;
-  const calib = mode === "calibracao";
-
-  calibPanel.hidden = !calib;
-  partMenu.hidden = calib;
-  hint.hidden = calib;
-  if (calib) hideInfoCard();
-
-  btnToggleCalib.classList.toggle("active", calib);
-  viewer.classList.toggle("calib-cursor", calib);
-
-  refreshHotspotVisualState();
-  if (calib) refreshCalibList();
-}
-
-if (CALIBRATION_ENABLED) {
-  btnToggleCalib.hidden = false;
-  btnToggleCalib.addEventListener("click", () => {
-    setMode(state.mode === "calibracao" ? "aluno" : "calibracao");
-  });
-}
-calibClose.addEventListener("click", () => setMode("aluno"));
-
-// Select de peça (calibração)
-function buildSelectPart() {
-  selectPart.innerHTML = "";
-  PARTS.forEach(part => {
-    const opt = document.createElement("option");
-    opt.value = part.id;
-    opt.textContent = part.label;
-    selectPart.appendChild(opt);
-  });
-  selectPart.value = state.calibSelectedId;
-}
-selectPart.addEventListener("change", () => {
-  state.calibSelectedId = selectPart.value;
-  refreshHotspotVisualState();
-  refreshCalibList();
-  setCalibStatus(`Peça selecionada: ${labelOf(state.calibSelectedId)}.`);
-});
-
-function labelOf(id) {
-  const p = PARTS.find(p => p.id === id);
-  return p ? p.label : id;
-}
-function setCalibStatus(msg) {
-  calibStatus.textContent = msg;
-}
-
-// Clique no modelo define a posição do hotspot (modo calibração)
-viewer.addEventListener("click", (ev) => {
-  if (state.mode !== "calibracao") return;
-  const hit = viewer.positionAndNormalFromPoint(ev.offsetX, ev.offsetY);
-  if (!hit) {
-    setCalibStatus("Nenhum ponto do modelo encontrado ali. Clique diretamente sobre o capacete.");
-    return;
-  }
-  const id = state.calibSelectedId;
-  const posStr = `${hit.position.x.toFixed(4)} ${hit.position.y.toFixed(4)} ${hit.position.z.toFixed(4)}`;
-  const normStr = `${hit.normal.x.toFixed(4)} ${hit.normal.y.toFixed(4)} ${hit.normal.z.toFixed(4)}`;
-
-  state.hotspots[id] = { position: posStr, normal: normStr };
-  state.hotspotCalibrated[id] = true;
-
-  const el = viewer.querySelector(`.hotspot[data-id="${id}"]`);
-  if (el) {
-    el.hidden = false;
-    el.setAttribute("data-position", posStr);
-    el.setAttribute("data-normal", normStr);
+    updateEmptyState();
+    syncSelectionVisuals();
   }
 
-  emptyState.hidden = true;
-  setCalibStatus(`Ponto do hotspot capturado para "${labelOf(id)}".`);
-  refreshCalibList();
-});
+  function updateEmptyState() {
+    const calibrated = hasAnyCalibrated();
+    emptyState.hidden = calibrated || mode === "calibracao";
+    btnOpenCalibFromEmpty.hidden = !CALIBRATION_ENABLED;
+  }
 
-// Captura a posição de câmera atual como a visão automática da peça
-btnCaptureCamera.addEventListener("click", () => {
-  const id = state.calibSelectedId;
-  const orbit = viewer.getCameraOrbit();
-  state.resolvedViews[id] = { theta: orbit.theta, phi: orbit.phi, radius: orbit.radius };
-  state.cameraCalibrated[id] = true;
-
-  const thetaDeg = (orbit.theta * 180 / Math.PI).toFixed(2);
-  const phiDeg = (orbit.phi * 180 / Math.PI).toFixed(2);
-  const radiusM = orbit.radius.toFixed(4);
-  state.cameraViews[id] = `${thetaDeg}deg ${phiDeg}deg ${radiusM}m`;
-
-  setCalibStatus(`Posição de câmera capturada para "${labelOf(id)}".`);
-  refreshCalibList();
-});
-
-// Testa a rotação automática da peça selecionada (sem sair do modo calibração)
-btnTestView.addEventListener("click", () => {
-  animateCameraTo(state.calibSelectedId);
-});
-
-function refreshCalibList() {
-  calibList.innerHTML = "";
-  PARTS.forEach(part => {
-    const li = document.createElement("li");
-    li.dataset.id = part.id;
-    if (part.id === state.calibSelectedId) li.classList.add("current");
-
-    const name = document.createElement("span");
-    name.className = "name";
-    name.textContent = part.label;
-
-    const badges = document.createElement("span");
-    badges.className = "badges";
-
-    const bPos = document.createElement("span");
-    bPos.className = "badge" + (state.hotspotCalibrated[part.id] ? " done" : "");
-    bPos.textContent = "Ponto";
-
-    const bCam = document.createElement("span");
-    bCam.className = "badge" + (state.cameraCalibrated[part.id] ? " done" : "");
-    bCam.textContent = "Câmera";
-
-    badges.appendChild(bPos);
-    badges.appendChild(bCam);
-    li.appendChild(name);
-    li.appendChild(badges);
-
-    li.addEventListener("click", () => {
-      state.calibSelectedId = part.id;
-      selectPart.value = part.id;
-      refreshHotspotVisualState();
-      refreshCalibList();
-      setCalibStatus(`Peça selecionada: ${labelOf(part.id)}.`);
+  /* -----------------------------------------------------------
+     Sincronização: hotspot 3D + menu lateral + card de info
+     ----------------------------------------------------------- */
+  function syncSelectionVisuals() {
+    viewer.querySelectorAll(".hotspot").forEach((el) => {
+      el.classList.toggle("selected", el.dataset.partId === selectedPartId && mode === "aluno");
+      el.classList.toggle("calib-target", el.dataset.partId === selectedPartId && mode === "calibracao");
     });
 
-    calibList.appendChild(li);
-  });
-}
-
-btnClearCalib.addEventListener("click", () => {
-  if (!confirm("Restaurar as posições de câmera para os valores padrão (os pontos dos hotspots não serão afetados)?")) return;
-  PARTS.forEach(part => {
-    state.cameraCalibrated[part.id] = false;
-    state.cameraViews[part.id] = CAMERA_VIEWS[part.id];
-  });
-  resolveAllCameraViews();
-  refreshCalibList();
-  setCalibStatus("Posições de câmera restauradas para o padrão.");
-});
-
-// Exporta HOTSPOTS + CAMERA_VIEWS prontos para colar no script.js
-btnExport.addEventListener("click", () => {
-  const hotspotsCode = PARTS.map(part => {
-    const h = state.hotspots[part.id] || {};
-    return `  { id: "${part.id}", label: "${part.label}", position: "${h.position || "0 0 0"}", normal: "${h.normal || "0 1 0"}" },`;
-  }).join("\n");
-
-  const camerasCode = PARTS.map(part => {
-    return `  "${part.id}": "${state.cameraViews[part.id]}",`;
-  }).join("\n");
-
-  const text =
-`// ---- Cole este bloco substituindo o array HOTSPOTS em script.js ----
-const HOTSPOTS = [
-${hotspotsCode}
-];
-
-// ---- Cole este bloco substituindo o objeto CAMERA_VIEWS em script.js ----
-const CAMERA_VIEWS = {
-${camerasCode}
-};
-`;
-  exportText.value = text;
-  exportBox.hidden = false;
-  setCalibStatus("Coordenadas exportadas abaixo. Copie e cole no script.js.");
-});
-
-btnCopyExport.addEventListener("click", async () => {
-  try {
-    await navigator.clipboard.writeText(exportText.value);
-    setCalibStatus("Copiado para a área de transferência!");
-  } catch (e) {
-    exportText.select();
-    document.execCommand("copy");
-    setCalibStatus("Copiado (via seleção manual).");
+    navList.querySelectorAll(".nav-item").forEach((li) => {
+      li.classList.toggle("selected", li.dataset.partId === selectedPartId);
+    });
   }
-});
 
-/* =========================================================
-   INICIALIZAÇÃO
-   ========================================================= */
-function init() {
-  buildPartMenu();
-  buildSelectPart();
+  function renderInfoCard(partId) {
+    const h = findHotspot(partId);
+    if (!h) return;
+    const idx = HOTSPOTS.indexOf(h) + 1;
+    infoNumber.textContent = String(idx).padStart(2, "0");
+    infoTitle.textContent = h.label.toUpperCase();
+    infoDesc.textContent = h.desc || "";
+  }
 
-  const anyCalibrated = PARTS.some(p => state.hotspotCalibrated[p.id]);
-  emptyState.hidden = anyCalibrated || !CALIBRATION_ENABLED ? true : false;
+  /* -----------------------------------------------------------
+     Modo aluno: selecionar peça (via hotspot ou menu)
+     ----------------------------------------------------------- */
+  function selectPartAluno(partId, opts) {
+    opts = opts || {};
+    selectedPartId = partId;
+    syncSelectionVisuals();
+    renderInfoCard(partId);
+    infoPanel.hidden = false;
 
-  viewer.addEventListener("load", () => {
-    buildHotspotElements();
-    resolveAllCameraViews();
-    refreshCalibList();
-  }, { once: true });
-}
+    if (!opts.skipAnimate) {
+      animateToPart(partId);
+    }
+  }
 
-init();
+  function clearSelectionAluno() {
+    infoPanel.hidden = true;
+    selectedPartId = null;
+    syncSelectionVisuals();
+  }
+
+  function onHotspotClick(id) {
+    if (mode === "calibracao") {
+      selectPart.value = id;
+      selectedPartId = id;
+      syncSelectionVisuals();
+      updateCalibStatus();
+      renderCalibList();
+      return;
+    }
+    selectPartAluno(id);
+  }
+
+  infoClose.addEventListener("click", clearSelectionAluno);
+
+  /* -----------------------------------------------------------
+     Navegação vertical numerada (menu lateral)
+     ----------------------------------------------------------- */
+  function buildNav() {
+    navList.innerHTML = "";
+    HOTSPOTS.forEach((h, i) => {
+      const li = document.createElement("li");
+      li.className = "nav-item";
+      li.dataset.partId = h.id;
+
+      const nodeBtn = document.createElement("button");
+      nodeBtn.type = "button";
+      nodeBtn.className = "nav-node";
+      nodeBtn.textContent = String(i + 1).padStart(2, "0");
+      nodeBtn.setAttribute("aria-label", h.label);
+
+      const labelBtn = document.createElement("button");
+      labelBtn.type = "button";
+      labelBtn.className = "nav-label";
+      labelBtn.textContent = h.label;
+
+      function onClickNav() {
+        if (mode === "calibracao") {
+          selectPart.value = h.id;
+          selectedPartId = h.id;
+          syncSelectionVisuals();
+          updateCalibStatus();
+          renderCalibList();
+          return;
+        }
+        selectPartAluno(h.id);
+      }
+
+      nodeBtn.addEventListener("click", onClickNav);
+      labelBtn.addEventListener("click", onClickNav);
+
+      li.appendChild(nodeBtn);
+      li.appendChild(labelBtn);
+      navList.appendChild(li);
+    });
+  }
+
+  /* -----------------------------------------------------------
+     Câmera: reset (suave) e zoom controlado
+     ----------------------------------------------------------- */
+  btnReset.addEventListener("click", () => {
+    animateCameraTo({ theta: INITIAL_THETA, phi: INITIAL_PHI, radius: INITIAL_RADIUS, fov: INITIAL_FOV }, 1000);
+  });
+
+  function stepZoom(factor) {
+    const orbit = viewer.getCameraOrbit();
+    if (!orbit) return;
+    animToken++; // cancela qualquer animação automática em curso
+    const nextRadius = orbit.radius * factor;
+    viewer.cameraOrbit = orbit.theta + "rad " + orbit.phi + "rad " + nextRadius + "m";
+  }
+  btnZoomIn.addEventListener("click", () => stepZoom(0.85));
+  btnZoomOut.addEventListener("click", () => stepZoom(1.18));
+
+  /* -----------------------------------------------------------
+     Alternância de modo (aluno / calibração)
+     ----------------------------------------------------------- */
+  function setMode(newMode) {
+    mode = newMode;
+    const isCalib = mode === "calibracao";
+
+    calibPanel.hidden = !isCalib;
+    infoPanel.hidden = isCalib || !selectedPartId;
+    btnToggleCalib.classList.toggle("active", isCalib);
+
+    viewer.classList.toggle("calib-cursor", isCalib);
+    updateEmptyState();
+    renderHotspots();
+
+    if (isCalib) {
+      if (!selectedPartId) selectedPartId = HOTSPOTS[0].id;
+      selectPart.value = selectedPartId;
+      syncSelectionVisuals();
+      updateCalibStatus();
+      renderCalibList();
+    } else if (selectedPartId) {
+      renderInfoCard(selectedPartId);
+      infoPanel.hidden = false;
+    }
+  }
+
+  if (CALIBRATION_ENABLED) {
+    btnToggleCalib.hidden = false;
+    btnToggleCalib.addEventListener("click", () => {
+      setMode(mode === "calibracao" ? "aluno" : "calibracao");
+    });
+    btnOpenCalibFromEmpty.addEventListener("click", () => setMode("calibracao"));
+  }
+  btnCloseCalib.addEventListener("click", () => setMode("aluno"));
+
+  /* -----------------------------------------------------------
+     Painel de calibração: lista de peças
+     ----------------------------------------------------------- */
+  function buildSelect() {
+    selectPart.innerHTML = "";
+    HOTSPOTS.forEach((h) => {
+      const opt = document.createElement("option");
+      opt.value = h.id;
+      opt.textContent = h.label;
+      selectPart.appendChild(opt);
+    });
+    selectPart.value = selectedPartId;
+  }
+
+  selectPart.addEventListener("change", () => {
+    selectedPartId = selectPart.value;
+    syncSelectionVisuals();
+    updateCalibStatus();
+    renderCalibList();
+  });
+
+  function updateCalibStatus() {
+    const h = findHotspot(selectedPartId);
+    if (!h) return;
+    const hotspotDone = !!h.position;
+    calibStatus.textContent = hotspotDone
+      ? `"${h.label}": hotspot calibrado. Clique novamente no modelo para reposicionar, ou ajuste a câmera e capture a posição.`
+      : `Clique no modelo no local correspondente a "${h.label}" para fixar o hotspot.`;
+  }
+
+  function renderCalibList() {
+    calibList.innerHTML = "";
+    HOTSPOTS.forEach((h) => {
+      const preset = CAMERA_PRESETS[h.id];
+      const cameraDone = !!(preset && preset.theta != null && preset.captured);
+      const li = document.createElement("li");
+      li.className = (h.position ? "hotspot-done " : "") + (h.id === selectedPartId ? "selected" : "");
+      li.innerHTML =
+        `<span class="dot" title="Hotspot"></span>` +
+        `<span class="name">${h.label}</span>` +
+        `<span class="flags"><span class="dot-camera" title="Posição de câmera capturada"></span></span>`;
+      if (cameraDone) {
+        li.querySelector(".dot-camera").style.background = "var(--green-strong)";
+      }
+      li.addEventListener("click", () => {
+        selectPart.value = h.id;
+        selectedPartId = h.id;
+        syncSelectionVisuals();
+        updateCalibStatus();
+        renderCalibList();
+      });
+      calibList.appendChild(li);
+    });
+  }
+
+  /* -----------------------------------------------------------
+     Captura de clique sobre a superfície do modelo (hotspot)
+     ----------------------------------------------------------- */
+  viewer.addEventListener("click", (ev) => {
+    if (mode !== "calibracao") return;
+    if (ev.target.classList && ev.target.classList.contains("hotspot")) return;
+
+    const hit = viewer.positionAndNormalFromPoint(ev.offsetX, ev.offsetY);
+    if (!hit) {
+      calibStatus.textContent = "Não foi possível capturar um ponto ali. Clique diretamente sobre a superfície do modelo.";
+      return;
+    }
+
+    const h = findHotspot(selectedPartId);
+    h.position = vecToString(hit.position);
+    h.normal = vecToString(hit.normal);
+
+    renderHotspots();
+    renderCalibList();
+    updateCalibStatus();
+  });
+
+  /* -----------------------------------------------------------
+     Captura da posição de câmera ideal para a peça selecionada
+     ----------------------------------------------------------- */
+  btnCaptureCamera.addEventListener("click", () => {
+    const h = findHotspot(selectedPartId);
+    if (!h) return;
+
+    const orbit = viewer.getCameraOrbit();
+    const fov = viewer.getFieldOfView();
+
+    CAMERA_PRESETS[selectedPartId] = {
+      theta: +(orbit.theta * RAD).toFixed(2),
+      phi: +(orbit.phi * RAD).toFixed(2),
+      radius: +orbit.radius.toFixed(4),
+      fov: +fov.toFixed(2),
+      captured: true,
+    };
+
+    calibStatus.textContent = `Posição de câmera capturada para "${h.label}".`;
+    renderCalibList();
+  });
+
+  /* -----------------------------------------------------------
+     Exportar coordenadas dos hotspots
+     ----------------------------------------------------------- */
+  function buildExportText() {
+    const lines = HOTSPOTS.map((h) => {
+      const pos = h.position ? `"${h.position}"` : "null";
+      const nor = h.normal ? `"${h.normal}"` : "null";
+      const desc = (h.desc || "").replace(/"/g, '\\"');
+      return `  { id: "${h.id}", label: "${h.label}", position: ${pos}, normal: ${nor},\n    desc: "${desc}" },`;
+    });
+    return "const HOTSPOTS = [\n" + lines.join("\n") + "\n];";
+  }
+
+  btnExport.addEventListener("click", () => {
+    exportText.value = buildExportText();
+    exportBox.hidden = false;
+  });
+
+  btnCopy.addEventListener("click", async () => {
+    await copyToClipboard(exportText, btnCopy);
+  });
+
+  /* -----------------------------------------------------------
+     Exportar posições de câmera calibradas
+     ----------------------------------------------------------- */
+  function buildCameraExportText() {
+    const lines = HOTSPOTS.map((h) => {
+      const p = CAMERA_PRESETS[h.id] || {};
+      const theta = p.theta != null ? p.theta : 0;
+      const phi = p.phi != null ? p.phi : 80;
+      const radius = p.radius != null ? p.radius : "null";
+      const fov = p.fov != null ? p.fov : "null";
+      return `  "${h.id}": { theta: ${theta}, phi: ${phi}, radius: ${radius}, fov: ${fov} },`;
+    });
+    return "const CAMERA_PRESETS = {\n" + lines.join("\n") + "\n};";
+  }
+
+  btnExportCamera.addEventListener("click", () => {
+    exportCameraText.value = buildCameraExportText();
+    exportCameraBox.hidden = false;
+  });
+
+  btnCopyCamera.addEventListener("click", async () => {
+    await copyToClipboard(exportCameraText, btnCopyCamera);
+  });
+
+  async function copyToClipboard(textarea, btn) {
+    try {
+      await navigator.clipboard.writeText(textarea.value);
+      btn.textContent = "Copiado!";
+    } catch (e) {
+      textarea.select();
+      document.execCommand("copy");
+      btn.textContent = "Copiado!";
+    }
+    const original = btn === btnCopy ? "Copiar" : "Copiar";
+    setTimeout(() => (btn.textContent = original), 1500);
+  }
+
+  /* -----------------------------------------------------------
+     Inicialização
+     ----------------------------------------------------------- */
+  function init() {
+    const orbit = viewer.getCameraOrbit();
+    INITIAL_THETA = orbit.theta;
+    INITIAL_PHI = orbit.phi;
+    INITIAL_RADIUS = orbit.radius;
+    INITIAL_FOV = viewer.getFieldOfView();
+
+    buildSelect();
+    buildNav();
+    renderCalibList();
+    renderHotspots();
+    updateEmptyState();
+
+    // Seleciona a primeira peça por padrão, sem animar (já é a vista inicial)
+    selectPartAluno(HOTSPOTS[0].id, { skipAnimate: true });
+  }
+
+  if (viewer.loaded) {
+    init();
+  } else {
+    viewer.addEventListener("load", init, { once: true });
+  }
+})();

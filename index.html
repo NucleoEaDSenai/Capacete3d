@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Identificação das partes externas — Capacete</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- model-viewer: componente usado para exibir o modelo 3D (.glb) no navegador -->
+  <script type="module" src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+  <script nomodule src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer-legacy.js"></script>
+</head>
+<body>
+
+  <div id="app">
+
+    <!-- Barra superior -->
+    <header id="top-bar">
+      <h1>Identificação das partes externas</h1>
+      <div id="top-bar-actions">
+        <button id="btn-reset" class="icon-btn" title="Voltar à visualização inicial" type="button">
+          <span class="icon">⟲</span><span class="btn-label">Início</span>
+        </button>
+        <button id="btn-zoom-out" class="icon-btn" title="Diminuir zoom" type="button">−</button>
+        <button id="btn-zoom-in" class="icon-btn" title="Aumentar zoom" type="button">+</button>
+        <button id="btn-toggle-calib" class="icon-btn ghost" title="Modo calibração" type="button" hidden>
+          <span class="icon">⚙</span><span class="btn-label">Calibração</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Área principal: viewer 3D -->
+    <main id="stage">
+
+      <div id="viewer-frame">
+        <model-viewer
+          id="viewer"
+          src="capacete.glb"
+          alt="Modelo 3D de capacete para identificação das partes externas"
+          camera-controls
+          disable-pan
+          interaction-prompt="none"
+          shadow-intensity="0.9"
+          exposure="1.05"
+          camera-orbit="10deg 75deg 105%"
+          min-camera-orbit="auto auto 60%"
+          max-camera-orbit="auto auto 220%"
+          field-of-view="30deg"
+          ar="false"
+        >
+          <div id="loading-overlay" slot="poster">
+            <div class="spinner"></div>
+            <p>Carregando modelo 3D…</p>
+          </div>
+        </model-viewer>
+      </div>
+
+      <!-- Aviso exibido quando ainda não existem hotspots calibrados -->
+      <div id="empty-state" hidden>
+        <p><strong>Nenhum ponto foi calibrado ainda.</strong></p>
+        <p>Abra o Modo Calibração para posicionar os hotspots sobre o modelo.</p>
+        <button id="btn-open-calib-from-empty" class="btn-primary" type="button" hidden>Abrir Modo Calibração</button>
+      </div>
+
+      <!-- Tooltip que aparece ao clicar em um hotspot (modo aluno) -->
+      <div id="tooltip" class="tooltip" hidden>
+        <span id="tooltip-text"></span>
+        <button id="tooltip-close" aria-label="Fechar" type="button">×</button>
+      </div>
+
+    </main>
+
+    <!-- Painel lateral de calibração (oculto no modo aluno) -->
+    <aside id="calib-panel" hidden>
+      <h2>Modo Calibração</h2>
+      <p class="calib-help">
+        1. Gire e posicione o modelo.<br />
+        2. Escolha a peça na lista abaixo.<br />
+        3. Clique sobre o ponto correspondente no modelo.<br />
+        4. Repita para cada peça.<br />
+        5. Copie as coordenadas exportadas ao final.
+      </p>
+
+      <label for="select-part">Peça a posicionar:</label>
+      <select id="select-part"></select>
+
+      <div id="calib-status" class="calib-status">Selecione uma peça e clique no modelo.</div>
+
+      <ul id="calib-list"></ul>
+
+      <div class="calib-buttons">
+        <button id="btn-export" class="btn-primary" type="button">Exportar coordenadas</button>
+        <button id="btn-close-calib" class="btn-secondary" type="button">Fechar calibração</button>
+      </div>
+
+      <div id="export-box" hidden>
+        <p class="calib-help">Copie o texto abaixo e cole no início do arquivo <code>script.js</code>, substituindo o array <code>HOTSPOTS</code>:</p>
+        <textarea id="export-text" readonly></textarea>
+        <button id="btn-copy" class="btn-secondary" type="button">Copiar</button>
+      </div>
+    </aside>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

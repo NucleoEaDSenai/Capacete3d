@@ -1,0 +1,376 @@
+/* =========================================================
+   Tokens
+   ========================================================= */
+:root {
+  --bg: #1b1d21;
+  --panel: #23262b;
+  --panel-line: #34383f;
+  --steel: #9aa1ab;
+  --steel-dim: #6b7178;
+  --ink: #eceae4;
+  --ink-dim: #b8b6b0;
+  --accent: #c9a266;      /* latão / bronze — combina com o metal da arma */
+  --accent-strong: #e0b876;
+  --danger: #b56a5a;
+  --radius: 6px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+}
+
+button { font-family: inherit; }
+
+/* =========================================================
+   Layout geral — pensado para caber num slide 16:9
+   ========================================================= */
+#app {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#top-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--panel-line);
+}
+
+#top-bar h1 {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: var(--ink);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#top-bar-actions {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #2c3036;
+  border: 1px solid var(--panel-line);
+  color: var(--ink-dim);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.icon-btn .icon { font-size: 15px; line-height: 1; }
+.icon-btn:hover {
+  background: #363b42;
+  color: var(--ink);
+  border-color: var(--steel-dim);
+}
+.icon-btn.ghost {
+  border-style: dashed;
+}
+.icon-btn.active {
+  background: var(--accent);
+  color: #26200f;
+  border-color: var(--accent);
+}
+
+/* =========================================================
+   Palco / viewer
+   ========================================================= */
+#stage {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  min-height: 0;
+}
+
+#viewer-frame {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+model-viewer {
+  width: 100%;
+  height: 100%;
+  --poster-color: transparent;
+  background: radial-gradient(circle at 50% 45%, #2a2d33 0%, #1b1d21 72%);
+}
+
+model-viewer.calib-cursor {
+  cursor: crosshair;
+}
+
+#loading-overlay {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--ink-dim);
+  font-size: 13px;
+}
+.spinner {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 3px solid var(--panel-line);
+  border-top-color: var(--accent);
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* =========================================================
+   Hotspots (âncorados no modelo pelo model-viewer)
+   ========================================================= */
+.hotspot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  background: var(--accent);
+  box-shadow: 0 0 0 6px rgba(201, 162, 102, 0.45), 0 0 14px 4px rgba(224, 184, 118, 0.55), 0 2px 5px rgba(0,0,0,0.6);
+  cursor: pointer;
+  padding: 0;
+  transform: translate(-50%, -50%);
+  transition: transform .12s ease, background-color .12s ease, box-shadow .12s ease;
+  animation: hotspot-pulse 1.8s ease-in-out infinite;
+}
+.hotspot:hover {
+  transform: translate(-50%, -50%) scale(1.15);
+}
+.hotspot.selected {
+  background: var(--accent-strong);
+  box-shadow: 0 0 0 9px rgba(224, 184, 118, 0.5), 0 0 18px 6px rgba(224, 184, 118, 0.7), 0 2px 5px rgba(0,0,0,0.6);
+  transform: translate(-50%, -50%) scale(1.3);
+  animation: none;
+}
+.hotspot.calib-target {
+  background: #7fb0c9;
+  box-shadow: 0 0 0 9px rgba(127, 176, 201, 0.5);
+  animation: none;
+}
+@keyframes hotspot-pulse {
+  0%, 100% { box-shadow: 0 0 0 6px rgba(201, 162, 102, 0.45), 0 0 14px 4px rgba(224, 184, 118, 0.55), 0 2px 5px rgba(0,0,0,0.6); }
+  50% { box-shadow: 0 0 0 10px rgba(201, 162, 102, 0.25), 0 0 20px 8px rgba(224, 184, 118, 0.35), 0 2px 5px rgba(0,0,0,0.6); }
+}
+
+/* Tooltip do modo aluno */
+.tooltip {
+  position: absolute;
+  left: 50%;
+  bottom: 90px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(24, 26, 29, 0.97);
+  border: 1px solid var(--panel-line);
+  border-left: 5px solid var(--accent);
+  padding: 16px 20px 16px 24px;
+  border-radius: var(--radius);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--ink);
+  max-width: min(90%, 560px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+  z-index: 5;
+}
+.tooltip button {
+  background: none;
+  border: none;
+  color: var(--ink-dim);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.tooltip button:hover { color: var(--ink); }
+
+/* Estado vazio (sem calibração) */
+#empty-state {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: var(--ink-dim);
+  font-size: 13px;
+  background: rgba(24, 26, 29, 0.85);
+  border: 1px solid var(--panel-line);
+  border-radius: var(--radius);
+  padding: 16px 22px;
+  max-width: 320px;
+  z-index: 4;
+}
+#empty-state p { margin: 0 0 6px; }
+#empty-state strong { color: var(--ink); }
+
+/* =========================================================
+   Painel de calibração
+   ========================================================= */
+#calib-panel {
+  flex: 0 0 300px;
+  max-width: 42vw;
+  background: var(--panel);
+  border-left: 1px solid var(--panel-line);
+  padding: 16px;
+  overflow-y: auto;
+  font-size: 13px;
+}
+#calib-panel h2 {
+  font-size: 14px;
+  margin: 0 0 10px;
+  color: var(--ink);
+}
+.calib-help {
+  color: var(--ink-dim);
+  line-height: 1.5;
+  margin: 0 0 14px;
+}
+.calib-help code {
+  background: #2c3036;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+#calib-panel label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--ink-dim);
+}
+
+#select-part {
+  width: 100%;
+  background: #2c3036;
+  color: var(--ink);
+  border: 1px solid var(--panel-line);
+  border-radius: var(--radius);
+  padding: 7px 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.calib-status {
+  color: var(--ink-dim);
+  background: #2c3036;
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  margin-bottom: 12px;
+  min-height: 18px;
+}
+
+#calib-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  border-top: 1px solid var(--panel-line);
+}
+#calib-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 2px;
+  border-bottom: 1px solid var(--panel-line);
+  color: var(--ink-dim);
+}
+#calib-list li.done { color: var(--ink); }
+#calib-list .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--steel-dim);
+  flex: 0 0 auto;
+}
+#calib-list li.done .dot { background: var(--accent); }
+#calib-list .name { flex: 1 1 auto; }
+
+.calib-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.btn-primary, .btn-secondary {
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  flex: 1 1 auto;
+}
+.btn-primary {
+  background: var(--accent);
+  color: #26200f;
+  font-weight: 600;
+}
+.btn-primary:hover { background: var(--accent-strong); }
+.btn-secondary {
+  background: transparent;
+  border-color: var(--panel-line);
+  color: var(--ink-dim);
+}
+.btn-secondary:hover { color: var(--ink); border-color: var(--steel-dim); }
+
+#export-box textarea {
+  width: 100%;
+  height: 160px;
+  background: #16181b;
+  color: #cfead0;
+  border: 1px solid var(--panel-line);
+  border-radius: var(--radius);
+  padding: 8px;
+  font-family: "SF Mono", Consolas, Menlo, monospace;
+  font-size: 11.5px;
+  margin-bottom: 8px;
+  resize: vertical;
+}
+
+/* =========================================================
+   Responsivo
+   ========================================================= */
+@media (max-width: 720px) {
+  #top-bar h1 { font-size: 13px; }
+  .btn-label { display: none; }
+  #calib-panel { flex-basis: 100%; max-width: 100%; position: absolute; inset: 0; z-index: 20; }
+  #stage { position: relative; }
+  .tooltip { font-size: 20px; padding: 12px 14px 12px 18px; bottom: 70px; }
+  .tooltip button { font-size: 20px; }
+  .hotspot { width: 24px; height: 24px; }
+}
+
+@media (max-width: 480px) {
+  #top-bar { padding: 8px 10px; }
+  .icon-btn { padding: 6px 8px; }
+  .tooltip { font-size: 17px; bottom: 60px; max-width: 92%; }
+}

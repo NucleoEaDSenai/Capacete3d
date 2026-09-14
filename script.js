@@ -33,7 +33,7 @@
 const CALIBRATION_ENABLED = true;
 
 const HOTSPOTS = [
-  { id: "aba",             label: "Aba",                    position: "0.0927 0.6744 0.4875",  normal: "0.1933 0.8153 0.5459",
+  { id: "aba",             label: "Aba",                    position: "0.0284 0.6528 0.5353",  normal: "0.0633 0.8349 0.5467",
     desc: "Ajuda a proteger a região dos olhos e do rosto contra luz, respingos e pequenas partículas, proporcionando maior conforto durante o uso." },
   { id: "cinta-jugular",   label: "Cinta Jugular",          position: "-0.3045 0.3803 0.1613",  normal: "-0.1390 0.1790 0.9740",
     desc: "Auxilia na fixação do capacete à cabeça, reduzindo o risco de deslocamento ou queda durante as atividades." },

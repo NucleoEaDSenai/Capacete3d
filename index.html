@@ -3,42 +3,46 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Identificação das partes externas — Capacete</title>
+  <title>Capacete 3D — Identificação das partes externas</title>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
   <link rel="stylesheet" href="style.css" />
-
-  <!-- model-viewer: componente usado para exibir o modelo 3D (.glb) no navegador -->
-  <script type="module" src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
-  <script nomodule src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer-legacy.js"></script>
 </head>
 <body>
-
   <div id="app">
 
-    <!-- Barra superior -->
+    <!-- ============ BARRA SUPERIOR ============ -->
     <header id="top-bar">
-      <h1>Identificação das partes externas</h1>
+      <div id="top-bar-titles">
+        <h1>Identificação das partes externas</h1>
+        <p id="top-subtitle">Explore o capacete e conheça cada componente.</p>
+      </div>
+
       <div id="top-bar-actions">
-        <button id="btn-reset" class="icon-btn" title="Voltar à visualização inicial" type="button">
-          <span class="icon">⟲</span><span class="btn-label">Início</span>
+        <button id="btn-reset" class="pill-btn" title="Voltar à posição inicial">
+          <span class="icon">⌂</span><span class="btn-label">Início</span>
         </button>
-        <button id="btn-zoom-out" class="icon-btn" title="Diminuir zoom" type="button">−</button>
-        <button id="btn-zoom-in" class="icon-btn" title="Aumentar zoom" type="button">+</button>
-        <button id="btn-toggle-calib" class="icon-btn ghost" title="Modo calibração" type="button" hidden>
+
+        <div class="zoom-group">
+          <button id="btn-zoom-out" class="pill-btn square" title="Diminuir zoom">−</button>
+          <button id="btn-zoom-in" class="pill-btn square" title="Aumentar zoom">+</button>
+        </div>
+
+        <button id="btn-toggle-calib" class="pill-btn" hidden title="Modo de calibração (uso interno)">
           <span class="icon">⚙</span><span class="btn-label">Calibração</span>
         </button>
       </div>
     </header>
 
-    <!-- Área principal: viewer 3D -->
+    <!-- ============ PALCO 3D ============ -->
     <main id="stage">
-
       <div id="viewer-frame">
+        <div id="stage-floor" aria-hidden="true"></div>
+
         <model-viewer
           id="viewer"
           src="capacete.glb"
-          alt="Modelo 3D de capacete para identificação das partes externas"
           camera-controls
-          disable-pan
+          disable-zoom="false"
           interaction-prompt="none"
           shadow-intensity="0.9"
           exposure="1.05"
@@ -46,57 +50,79 @@
           min-camera-orbit="auto auto 60%"
           max-camera-orbit="auto auto 220%"
           field-of-view="30deg"
-          ar="false"
+          camera-target="auto auto auto"
         >
           <div id="loading-overlay" slot="poster">
             <div class="spinner"></div>
-            <p>Carregando modelo 3D…</p>
+            <span>Carregando modelo 3D…</span>
           </div>
         </model-viewer>
+
+        <!-- hotspots injetados via JS dentro do model-viewer -->
       </div>
 
-      <!-- Aviso exibido quando ainda não existem hotspots calibrados -->
+      <!-- Card lateral esquerdo (modo aluno) -->
+      <aside id="info-card" class="info-card" hidden>
+        <div class="info-card-header">
+          <div class="info-number" id="info-number">01</div>
+          <h2 id="info-title" class="info-title"></h2>
+          <button id="info-close" class="info-close" aria-label="Fechar">×</button>
+        </div>
+        <div class="info-card-body">
+          <p id="info-desc"></p>
+        </div>
+      </aside>
+
+      <!-- Menu vertical direito (modo aluno) -->
+      <nav id="part-menu" class="part-menu" aria-label="Partes do capacete"></nav>
+
+      <!-- Dica inferior esquerda -->
+      <div id="hint" class="hint">
+        <span class="hint-icon">👆</span>
+        <p>Clique nos pontos para<br />explorar cada parte do capacete.</p>
+      </div>
+
+      <!-- Estado vazio (nenhuma peça calibrada ainda) -->
       <div id="empty-state" hidden>
-        <p><strong>Nenhum ponto foi calibrado ainda.</strong></p>
-        <p>Abra o Modo Calibração para posicionar os hotspots sobre o modelo.</p>
-        <button id="btn-open-calib-from-empty" class="btn-primary" type="button" hidden>Abrir Modo Calibração</button>
+        <p><strong>Nenhum ponto calibrado ainda.</strong></p>
+        <p>Abra o modo Calibração para posicionar os hotspots sobre o modelo.</p>
       </div>
-
-      <!-- Tooltip que aparece ao clicar em um hotspot (modo aluno) -->
-      <div id="tooltip" class="tooltip" hidden>
-        <span id="tooltip-text"></span>
-        <button id="tooltip-close" aria-label="Fechar" type="button">×</button>
-      </div>
-
     </main>
 
-    <!-- Painel lateral de calibração (oculto no modo aluno) -->
+    <!-- ============ PAINEL DE CALIBRAÇÃO (uso interno) ============ -->
     <aside id="calib-panel" hidden>
-      <h2>Modo Calibração</h2>
+      <div class="calib-head">
+        <h2>Modo de Calibração</h2>
+        <button id="calib-close" class="info-close" aria-label="Fechar calibração">×</button>
+      </div>
+
       <p class="calib-help">
-        1. Gire e posicione o modelo.<br />
-        2. Escolha a peça na lista abaixo.<br />
-        3. Clique sobre o ponto correspondente no modelo.<br />
-        4. Repita para cada peça.<br />
-        5. Copie as coordenadas exportadas ao final.
+        Selecione uma peça, clique sobre o modelo para marcar o
+        <strong>ponto do hotspot</strong>, e/ou gire e dê zoom manualmente até o
+        enquadramento ideal e clique em <strong>Capturar posição da câmera</strong>
+        para definir a rotação automática daquele item.
       </p>
 
-      <label for="select-part">Peça a posicionar:</label>
+      <label for="select-part">Peça selecionada</label>
       <select id="select-part"></select>
 
-      <div id="calib-status" class="calib-status">Selecione uma peça e clique no modelo.</div>
+      <div class="calib-status" id="calib-status">Nenhuma ação ainda.</div>
+
+      <div class="calib-buttons">
+        <button id="btn-capture-camera" class="btn-primary">Capturar posição da câmera</button>
+        <button id="btn-test-view" class="btn-secondary">Testar rotação</button>
+      </div>
 
       <ul id="calib-list"></ul>
 
       <div class="calib-buttons">
-        <button id="btn-export" class="btn-primary" type="button">Exportar coordenadas</button>
-        <button id="btn-close-calib" class="btn-secondary" type="button">Fechar calibração</button>
+        <button id="btn-export" class="btn-primary">Exportar coordenadas</button>
+        <button id="btn-clear-calib" class="btn-secondary">Limpar tudo</button>
       </div>
 
       <div id="export-box" hidden>
-        <p class="calib-help">Copie o texto abaixo e cole no início do arquivo <code>script.js</code>, substituindo o array <code>HOTSPOTS</code>:</p>
         <textarea id="export-text" readonly></textarea>
-        <button id="btn-copy" class="btn-secondary" type="button">Copiar</button>
+        <button id="btn-copy-export" class="btn-secondary">Copiar para a área de transferência</button>
       </div>
     </aside>
 

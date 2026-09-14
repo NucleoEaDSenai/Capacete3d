@@ -19,11 +19,11 @@ const CALIBRATION_ENABLED = true;
 
 const HOTSPOTS = [
   { id: "cinta-jugular",  label: "Cinta Jugular",         position: "-0.3045 0.3803 0.1613", normal: "-0.1390 0.1790 0.9740" },
-  { id: "ajuste-traseiro",label: "Ajuste Traseiro",       position: "0.0000 0.4773 -0.3009", normal: "0.0220 0.8450 0.5340" },
+  { id: "ajuste-traseiro",label: "Ajuste Traseiro",       position: "0.0114 0.3993 -0.3336", normal: "0.1818 -0.7712 -0.6101" },
   { id: "carneira",       label: "Carneira (Suspensão)",  position: "0.0000 0.7039 0.0819", normal: "-0.1000 -0.8110 -0.5760" },
   { id: "encaixe",        label: "Encaixe de Acessórios", position: "0.3703 0.8101 0.0205", normal: "0.6670 0.7450 -0.0180" },
-  { id: "aba",            label: "Aba",                   position: "-0.0053 0.5955 0.4102", normal: "-0.0900 -0.9470 0.3070" },
-  { id: "fivela",         label: "Fivela da Jugular",     position: "0.1288 0.4700 -0.2656", normal: "0.7820 -0.6150 0.1070" },
+  { id: "aba",            label: "Aba",                   position: "0.0927 0.6744 0.4875", normal: "0.1933 0.8153 0.5459" },
+  { id: "fivela",         label: "Fivela da Jugular",     position: "0.2285 0.0990 0.1580", normal: "0.6876 -0.6159 0.3847" },
   { id: "queixeira",      label: "Queixeira",             position: "0.0043 0.0263 0.2468", normal: "0.0040 -0.6540 0.7560" },
 ];
 

@@ -15,7 +15,7 @@
        CALIBRATION_ENABLED = false.
    ============================================================= */
 
-const CALIBRATION_ENABLED = false;
+const CALIBRATION_ENABLED = true;
 
 const HOTSPOTS = [
   { id: "cinta-jugular",  label: "Cinta Jugular",         position: "-0.3045 0.3803 0.1613", normal: "-0.1390 0.1790 0.9740" },

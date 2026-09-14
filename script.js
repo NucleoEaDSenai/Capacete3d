@@ -39,24 +39,24 @@ const HOTSPOTS = [
     desc: "Auxilia na fixação do capacete à cabeça, reduzindo o risco de deslocamento ou queda durante as atividades." },
   { id: "queixeira",       label: "Queixeira",              position: "0.0043 0.0263 0.2468",   normal: "0.0040 -0.6540 0.7560",
     desc: "Apoia a cinta sob o queixo, proporcionando maior estabilidade, conforto e posicionamento adequado do capacete." },
-  { id: "fivela",          label: "Fivela da Jugular",      position: "0.2285 0.0990 0.1580",   normal: "0.6876 -0.6159 0.3847",
+  { id: "fivela",          label: "Fivela da Jugular",      position: "0.2748 0.2085 0.1894",   normal: "0.9657 -0.1676 0.1983",
     desc: "Permite prender e soltar a cinta com praticidade, mantendo o sistema de fixação fechado e ajustado." },
   { id: "encaixe",         label: "Encaixe de Acessórios",  position: "0.3703 0.8101 0.0205",   normal: "0.6670 0.7450 -0.0180",
     desc: "Permite acoplar acessórios compatíveis ao capacete de acordo com as necessidades de cada atividade." },
-  { id: "ajuste-traseiro", label: "Ajuste Traseiro",        position: "0.0114 0.3993 -0.3336",  normal: "0.1818 -0.7712 -0.6101",
+  { id: "ajuste-traseiro", label: "Ajuste Traseiro",        position: "-0.0073 0.4138 -0.3375", normal: "0.0017 -0.2393 -0.9709",
     desc: "Permite adaptar a suspensão ao tamanho da cabeça, proporcionando melhor encaixe, estabilidade e conforto." },
   { id: "carneira",        label: "Carneira (Suspensão)",   position: "0.0000 0.7039 0.0819",   normal: "-0.1000 -0.8110 -0.5760",
     desc: "Sistema interno que sustenta o capacete, distribui o peso e mantém o casco afastado da cabeça, proporcionando conforto e segurança." },
 ];
 
 const CAMERA_PRESETS = {
-  "aba":             { theta: 0,   phi: 78, radius: null, fov: null },
-  "cinta-jugular":   { theta: -35, phi: 88, radius: null, fov: null },
-  "queixeira":       { theta: 0,   phi: 96, radius: null, fov: null },
-  "fivela":          { theta: 55,  phi: 96, radius: null, fov: null },
-  "encaixe":         { theta: 35,  phi: 55, radius: null, fov: null },
-  "ajuste-traseiro": { theta: 180, phi: 80, radius: null, fov: null },
-  "carneira":        { theta: 0,   phi: 35, radius: null, fov: null },
+  "aba":             { theta: 2.18,   phi: 65.82,  radius: 1.9593, fov: 22.98 },
+  "cinta-jugular":   { theta: -61.1,  phi: 108.88, radius: 2.4345, fov: 17.6 },
+  "queixeira":       { theta: -1.31,  phi: 157.5,  radius: 2.0231, fov: 17.6 },
+  "fivela":          { theta: 53.69,  phi: 141.68, radius: 2.0555, fov: 17.6 },
+  "encaixe":         { theta: 82.85,  phi: 77.62,  radius: 2.8825, fov: 20.11 },
+  "ajuste-traseiro": { theta: 180,    phi: 97.4,   radius: 1.9593, fov: 22.98 },
+  "carneira":        { theta: 0,      phi: 130.09, radius: 2.0231, fov: 17.6 },
 };
 
 /* ============================================================= */
